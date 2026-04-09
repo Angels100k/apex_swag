@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Apex Swag RP Tracker</title>
+  <link rel="stylesheet" href="../../css/desktop.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div id="title-bar">
+        <div id="title-left">
+          <span id="app-logo">⬡</span>
+          <span id="app-title">APEX SWAG — RP TRACKER</span>
+        </div>
+        <div id="window-controls">
+          <button id="btn-minimize" title="Minimize">—</button>
+          <button id="btn-close" title="Close">✕</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="config-bar">
+      <input id="input-player" type="text" placeholder="EA / Origin player name" autocomplete="off" />
+      <select id="select-platform">
+        <option value="PC">PC</option>
+        <option value="PS4">PlayStation</option>
+        <option value="X1">Xbox</option>
+        <option value="Switch">Switch</option>
+      </select>
+      <button id="btn-start-session">▶ Start Session</button>
+      <button id="btn-end-session" disabled>■ End Session</button>
+      <button id="btn-record-match" disabled title="Fetch current RP and record match result">⬤ Record Match</button>
+      <span id="status-badge" class="badge-inactive">No session</span>
+      <span id="gep-badge" class="badge-gep-off" title="Overwolf Game Events Provider status">GEP OFF</span>
+      <span id="api-error" class="hidden"></span>
+    </div>
+
+    <div id="content">
+      <div id="summary-bar">
+        <div class="card">
+          <div class="card-value" id="s-current-rp">—</div>
+          <div class="card-label">CURRENT RP</div>
+        </div>
+        <div class="card accent-green">
+          <div class="card-value" id="s-session-delta">—</div>
+          <div class="card-label">SESSION DELTA</div>
+        </div>
+        <div class="card">
+          <div class="card-value" id="s-matches">—</div>
+          <div class="card-label">MATCHES</div>
+        </div>
+        <div class="card accent-gold">
+          <div class="card-value" id="s-streak">—</div>
+          <div class="card-label">STREAK</div>
+        </div>
+        <div class="card">
+          <div class="card-value" id="s-rank">—</div>
+          <div class="card-label">RANK</div>
+        </div>
+      </div>
+
+      <div id="table-container">
+        <div id="table-header">
+          <span>MATCH HISTORY</span>
+          <span id="session-time"></span>
+        </div>
+        <div id="no-matches">No matches recorded yet. Start a session and play!</div>
+        <div class="table-scroll">
+          <table id="matches-table" class="hidden">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Time</th>
+                <th>RP Before</th>
+                <th>RP After</th>
+                <th>Delta</th>
+                <th>Rank</th>
+              </tr>
+            </thead>
+            <tbody id="matches-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="desktop.js"></script>
+</body>
+</html>

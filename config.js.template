@@ -1,0 +1,6 @@
+// config.js — DO NOT COMMIT (gitignored)
+// Get your API key at https://apexlegendsapi.com/
+const CONFIG = {
+  APEX_API_KEY: '',
+  PLATFORM: 'PC'
+};

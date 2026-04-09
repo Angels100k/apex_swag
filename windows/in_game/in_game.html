@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>RP Overlay</title>
+  <link rel="stylesheet" href="../../css/in_game.css" />
+</head>
+<body>
+  <div id="widget">
+
+    <!-- Rank pill (drag handle) -->
+    <div id="drag-bar">
+      <div id="rank-pill">
+        <span id="rank-dot"></span>
+        <span id="rank-name">APEX</span>
+      </div>
+    </div>
+
+    <!-- Big RP number -->
+    <div id="rp-block">
+      <span id="current-rp">—</span>
+      <span id="rp-unit">RP</span>
+    </div>
+
+    <!-- Divider -->
+    <div id="divider"></div>
+
+    <!-- Session + Streak chips -->
+    <div id="chips-row">
+      <div class="chip" id="chip-session">
+        <span class="chip-label">SESSION</span>
+        <span class="chip-val" id="session-delta">+0</span>
+      </div>
+      <div class="chip" id="chip-matches">
+        <span class="chip-label">MATCHES</span>
+        <span class="chip-val" id="matches-val">0</span>
+      </div>
+    </div>
+
+  </div>
+  <script src="in_game.js"></script>
+</body>
+</html>

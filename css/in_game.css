@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: transparent;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  overflow: hidden;
+  width: 220px;
+  padding-top: 6px;
+  padding-left: 5px;
+}
+
+/* ── Main widget card ─────────────────────────────────────────────────────── */
+
+#widget {
+  width: 210px;
+  background: rgba(12, 12, 16, 0.82);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 0.5px rgba(255,255,255,0.04) inset,
+    0 20px 60px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+  padding: 12px 14px 13px;
+  cursor: move;
+  transition: box-shadow 0.25s ease;
+}
+
+#widget.match-flash {
+  box-shadow:
+    0 0 0 1px rgba(76, 217, 100, 0.5) inset,
+    0 0 22px rgba(76, 217, 100, 0.18),
+    0 20px 60px rgba(0, 0, 0, 0.55);
+}
+
+/* ── Drag bar / header ────────────────────────────────────────────────────── */
+
+#drag-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#rank-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 3px 9px 3px 7px;
+}
+
+#rank-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff375f;
+  box-shadow: 0 0 6px rgba(255, 55, 95, 0.7);
+  flex-shrink: 0;
+}
+
+#rank-name {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+
+/* ── RP number ────────────────────────────────────────────────────────────── */
+
+#rp-block {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0 2px;
+  margin-bottom: 11px;
+}
+
+#current-rp {
+  font-size: 38px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+#rp-unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 1px;
+  padding-bottom: 2px;
+}
+
+/* ── Divider ──────────────────────────────────────────────────────────────── */
+
+#divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0.07) 20%,
+    rgba(255,255,255,0.07) 80%,
+    transparent 100%
+  );
+  margin-bottom: 10px;
+}
+
+/* ── Stat chips ───────────────────────────────────────────────────────────── */
+
+#chips-row {
+  display: flex;
+  gap: 7px;
+}
+
+.chip {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: background 0.2s;
+}
+
+.chip-label {
+  font-size: 7.5px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.chip-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ── Positive / negative colours ─────────────────────────────────────────── */
+
+.chip-val.positive {
+  color: #34c759;
+}
+#chip-session.has-positive {
+  background: rgba(52, 199, 89, 0.08);
+  border-color: rgba(52, 199, 89, 0.18);
+}
+
+.chip-val.negative {
+  color: #ff375f;
+}
+#chip-session.has-negative {
+  background: rgba(255, 55, 95, 0.08);
+  border-color: rgba(255, 55, 95, 0.18);
+}
+

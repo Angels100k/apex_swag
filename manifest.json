@@ -1,0 +1,57 @@
+{
+  "manifest_version": 1,
+  "type": "WebApp",
+  "meta": {
+    "name": "Apex Swag RP Tracker",
+    "author": "local",
+    "version": "1.0.0.0",
+    "minimum-overwolf-version": "0.220.0.0",
+    "description": "Tracks ranked RP per session in Apex Legends.",
+    "icon": "img/icon.png",
+    "icon_gray": "img/icon_gray.png"
+  },
+  "data": {
+    "start_window": "background",
+    "permissions": [
+      "GamesEventsData",
+      "GameInfo",
+      "Extensions"
+    ],
+    "game_events": [21566],
+    "windows": {
+      "background": {
+        "file": "windows/background/background.html",
+        "show_in_taskbar": false,
+        "transparent": true,
+        "resizable": false,
+        "size": { "width": 1, "height": 1 }
+      },
+      "desktop": {
+        "file": "windows/desktop/desktop.html",
+        "show_in_taskbar": true,
+        "transparent": false,
+        "resizable": true,
+        "size": { "width": 960, "height": 680 },
+        "min_size": { "width": 700, "height": 500 },
+        "desktop_only": true
+      },
+      "in_game": {
+        "file": "windows/in_game/in_game.html",
+        "show_in_taskbar": false,
+        "transparent": true,
+        "resizable": false,
+        "size": { "width": 228, "height": 170 },
+        "topmost": true,
+        "in_game_only": true,
+        "keep_window_location": true
+      }
+    },
+    "launch_events": [
+      {
+        "event": "GameLaunch",
+        "event_data": { "game_ids": [21566] },
+        "start_minimized": true
+      }
+    ]
+  }
+}
