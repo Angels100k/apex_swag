@@ -42,7 +42,7 @@ function dbWrite(filename, data, cb) {
 function startPolling() {
   if (pollingInterval) return;
   console.log('[bg] Polling started');
-  pollingInterval = setInterval(pollRP, 3000);
+  pollingInterval = setInterval(pollRP, 5000);
 }
 
 function stopPolling() {

@@ -45,12 +45,14 @@ const server = http.createServer((req, res) => {
 
   apiReq.on('error', err => {
     console.error('[proxy] API request error:', err.message);
+    if (res.headersSent) return;
     res.writeHead(502, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: err.message }));
   });
 
   apiReq.setTimeout(10000, () => {
     apiReq.destroy();
+    if (res.headersSent) return;
     res.writeHead(504, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'API request timed out' }));
   });
