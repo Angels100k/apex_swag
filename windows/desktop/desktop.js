@@ -79,10 +79,19 @@ overwolf.windows.onMessageReceived.addListener(msg => {
       $('status-badge').textContent = 'No session';
       $('status-badge').className = 'badge-inactive';
       break;
+    case 'match_deleted':
+      renderSession(msg.content.sessionData);
+      break;
     case 'gep_status':
       setGepStatus(msg.content.connected);
       break;
   }
+});
+
+$('matches-body').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-delete-match');
+  if (!btn) return;
+  overwolf.windows.sendMessage('background', 'delete_match', { index: parseInt(btn.dataset.index, 10) }, () => {});
 });
 
 // ─── UI helpers ───────────────────────────────────────────────────────────────
@@ -139,6 +148,7 @@ function rebuildTable(matches) {
   // Newest first
   [...matches].reverse().forEach((m, i) => {
     const num = matches.length - i;
+    const originalIndex = matches.length - 1 - i;
     const tr = document.createElement('tr');
     const deltaClass = m.delta >= 0 ? 'delta-pos' : 'delta-neg';
     tr.innerHTML = `
@@ -148,6 +158,7 @@ function rebuildTable(matches) {
       <td>${m.rpAfter}</td>
       <td class="${deltaClass}">${formatDelta(m.delta)}</td>
       <td>${m.rankName} ${m.rankDiv}</td>
+      <td><button class="btn-delete-match" data-index="${originalIndex}" title="Delete match">✕</button></td>
     `;
     tbody.appendChild(tr);
   });

@@ -351,6 +351,19 @@ tbody td {
 
 .col-num { color: var(--muted); font-size: 11px; }
 
+.btn-delete-match {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  line-height: 1;
+  opacity: 0.4;
+  transition: opacity 0.15s, color 0.15s;
+}
+.btn-delete-match:hover { opacity: 1; color: var(--red); }
+
 .delta-pos { color: var(--green); font-weight: 700; }
 .delta-neg { color: var(--red); font-weight: 700; }
 

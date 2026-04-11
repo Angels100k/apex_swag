@@ -466,6 +466,13 @@ overwolf.windows.onMessageReceived.addListener(msg => {
         gepConnected
       });
       break;
+    case 'delete_match':
+      if (sessionActive && sessionData && sessionData.matches) {
+        sessionData.matches.splice(msg.content.index, 1);
+        dbWrite('session.json', sessionData);
+        sendToDesktop('match_deleted', { sessionData });
+      }
+      break;
   }
 });
 
