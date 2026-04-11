@@ -1,0 +1,11 @@
+{
+  "name": "apex-swag-proxy",
+  "version": "1.0.0",
+  "main": "server.js",
+  "bin": "server.js",
+  "pkg": {
+    "targets": ["node18-win-x64"],
+    "output": "proxy.exe",
+    "scripts": ["server.js"]
+  }
+}

@@ -8,8 +8,9 @@ Shows a live in-game widget and a full desktop dashboard with match history.
 ## Requirements
 
 - [Overwolf](https://www.overwolf.com/) installed
-- [Node.js](https://nodejs.org/) installed (v16 or newer)
 - An Apex Legends API key from [apexlegendsapi.com](https://apexlegendsapi.com/)
+
+> No Node.js or other software required.
 
 ---
 
@@ -83,8 +84,6 @@ You should see:
 [apex-swag] Keep this window open while using the Overwolf app.
 ```
 
-> Node.js must be installed for this to work. Download it at [nodejs.org](https://nodejs.org/).
-
 ---
 
 ## 7 — Use the app
@@ -132,7 +131,8 @@ Its position is saved automatically between sessions.
 apex_swag/
 ├── manifest.json          Overwolf app config
 ├── config.js              Your API key — DO NOT commit (gitignored)
-├── server.js              Local CORS proxy (no npm install needed)
+├── proxy.exe              Local CORS proxy (standalone — no Node.js needed)
+├── server.js              Proxy source (rebuild with: npx pkg .)
 ├── start-proxy.bat        Double-click to start the proxy
 ├── .gitignore
 ├── img/                   App icons

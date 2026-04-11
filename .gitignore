@@ -1,3 +1,4 @@
 config.js
 .db/
 .claude
+node_modules/
