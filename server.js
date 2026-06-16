@@ -22,14 +22,24 @@ const server = http.createServer((req, res) => {
   const auth     = incoming.searchParams.get('auth');
   const player   = incoming.searchParams.get('player');
   const platform = incoming.searchParams.get('platform') || 'PC';
+  const mode     = incoming.searchParams.get('mode') || 'bridge';
 
-  if (!auth || !player) {
+  // Predator mode only needs an auth key — it returns the global predator cutoff.
+  if (mode === 'predator') {
+    if (!auth) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Missing auth param' }));
+      return;
+    }
+  } else if (!auth || !player) {
     res.writeHead(400, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Missing auth or player param' }));
     return;
   }
 
-  const path = `/bridge?auth=${encodeURIComponent(auth)}&player=${encodeURIComponent(player)}&platform=${encodeURIComponent(platform)}&version=5`;
+  const path = mode === 'predator'
+    ? `/predator?auth=${encodeURIComponent(auth)}&version=5`
+    : `/bridge?auth=${encodeURIComponent(auth)}&player=${encodeURIComponent(player)}&platform=${encodeURIComponent(platform)}&version=5`;
   console.log('[proxy] →', `https://${API_BASE}${path.replace(auth, '***')}`);
   const options = { hostname: API_BASE, path, method: 'GET', headers: { 'User-Agent': 'ApexSwag/1.0' } };
 

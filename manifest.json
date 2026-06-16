@@ -40,7 +40,7 @@
         "show_in_taskbar": false,
         "transparent": true,
         "resizable": false,
-        "size": { "width": 228, "height": 170 },
+        "size": { "width": 256, "height": 230 },
         "topmost": true,
         "in_game_only": true,
         "keep_window_location": true

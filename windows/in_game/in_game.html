@@ -8,33 +8,43 @@
 <body>
   <div id="widget">
 
-    <!-- Rank pill (drag handle) -->
-    <div id="drag-bar">
-      <div id="rank-pill">
-        <span id="rank-dot"></span>
-        <span id="rank-name">APEX</span>
+    <!-- Rank header (drag handle) -->
+    <div id="rank-header">
+      <span id="rank-emblem"></span>
+      <span id="rank-name">APEX</span>
+      <span id="ladder-pos"></span>
+    </div>
+
+    <!-- Two stat columns: current RP + session change -->
+    <div id="stat-row">
+      <div class="stat">
+        <span class="stat-label">CURRENT RP</span>
+        <span class="stat-val" id="current-rp">—</span>
+      </div>
+      <div class="stat" id="stat-change">
+        <span class="stat-label">CHANGE</span>
+        <span class="stat-val" id="session-delta">+0</span>
       </div>
     </div>
 
-    <!-- Big RP number -->
-    <div id="rp-block">
-      <span id="current-rp">—</span>
-      <span id="rp-unit">RP</span>
+    <!-- Last 4 games -->
+    <div id="games-block">
+      <span class="section-label">LAST 4 GAMES</span>
+      <div id="games-row">
+        <span class="game-pill empty"></span>
+        <span class="game-pill empty"></span>
+        <span class="game-pill empty"></span>
+        <span class="game-pill empty"></span>
+      </div>
     </div>
 
-    <!-- Divider -->
-    <div id="divider"></div>
-
-    <!-- Session + Streak chips -->
-    <div id="chips-row">
-      <div class="chip" id="chip-session">
-        <span class="chip-label">SESSION</span>
-        <span class="chip-val" id="session-delta">+0</span>
+    <!-- Next rank-up -->
+    <div id="rankup-block">
+      <div id="rankup-text">
+        <span id="rankup-remaining">—</span>
+        <span id="rankup-target">TO NEXT RANK</span>
       </div>
-      <div class="chip" id="chip-matches">
-        <span class="chip-label">MATCHES</span>
-        <span class="chip-val" id="matches-val">0</span>
-      </div>
+      <div id="rankup-bar"><div id="rankup-fill"></div></div>
     </div>
 
   </div>

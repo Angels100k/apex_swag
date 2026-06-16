@@ -15,8 +15,6 @@ let currentRP        = null;
 let sessionData      = null;
 let gameIsRunning    = false;
 let gepConnected     = false;
-let pollingInterval  = null;
-let pollBusy         = false;   // prevent overlapping fetches
 
 // ─── DB helpers ─────────────────────────────────────────────────────────────
 
@@ -35,60 +33,6 @@ function dbWrite(filename, data, cb) {
   overwolf.extensions.io.writeTextFile(STORAGE, filename, JSON.stringify(data, null, 2), result => {
     if (cb) cb(result.success ? null : new Error(result.error));
   });
-}
-
-// ─── RP Polling (every 3s, records only on change) ───────────────────────────
-
-function startPolling() {
-  if (pollingInterval) return;
-  console.log('[bg] Polling started');
-  pollingInterval = setInterval(pollRP, 5000);
-}
-
-function stopPolling() {
-  if (!pollingInterval) return;
-  clearInterval(pollingInterval);
-  pollingInterval = null;
-  pollBusy = false;
-  console.log('[bg] Polling stopped');
-}
-
-async function pollRP() {
-  if (!sessionActive || !playerName || pollBusy) return;
-  pollBusy = true;
-  try {
-    const rankData = await fetchPlayerRP(playerName, platform);
-    const newRP = rankData.rankScore;
-
-    // Only record when RP has actually changed
-    if (newRP !== currentRP) {
-      const rpBefore = currentRP;
-      const rpAfter  = newRP;
-      const delta    = rpAfter - rpBefore;
-      currentRP      = newRP;
-
-      const matchEntry = {
-        timestamp: new Date().toISOString(),
-        rpBefore,
-        rpAfter,
-        delta,
-        rankName: rankData.rankName,
-        rankDiv:  rankData.rankDiv
-      };
-
-      sessionData.currentRP = currentRP;
-      sessionData.matches.push(matchEntry);
-      dbWrite('session.json', sessionData);
-
-      sendToDesktop('match_recorded', { match: matchEntry, session: sessionData });
-      sendToInGame('rp_update', buildInGamePayload());
-      console.log('[bg] RP changed:', rpBefore, '→', rpAfter, '(', delta > 0 ? '+' : '', delta, ')');
-    }
-  } catch (e) {
-    console.error('[bg] Poll error:', e.message);
-  } finally {
-    pollBusy = false;
-  }
 }
 
 // ─── Apex API (via local CORS proxy — run start-proxy.bat first) ─────────────
@@ -116,8 +60,35 @@ async function fetchPlayerRP(name, plat) {
   return {
     rankScore: g.rank.rankScore,
     rankName:  g.rank.rankName,
-    rankDiv:   g.rank.rankDiv
+    rankDiv:   g.rank.rankDiv,
+    ladderPos: g.rank.ladderPosPlatform
   };
+}
+
+// Predator cutoff — only the auth key is needed. Called at match end, never polled.
+async function fetchPredatorRP(plat) {
+  const url = `${PROXY_BASE}?mode=predator&auth=${CONFIG.APEX_API_KEY}`;
+  const resp = await fetch(url);
+  const text = await resp.text();
+  if (!resp.ok) throw new Error('Predator HTTP ' + resp.status);
+  const data = JSON.parse(text);
+  if (data && data.Error) throw new Error('API: ' + data.Error);
+  const key = (plat || 'PC').toUpperCase();          // Switch → SWITCH
+  const slot = data && data.RP && data.RP[key];
+  if (!slot || typeof slot.val !== 'number') throw new Error('No predator data for ' + key);
+  return slot.val;
+}
+
+// Fetch + cache the predator cutoff without ever blocking match recording.
+async function refreshPredatorRP() {
+  try {
+    const cutoff = await fetchPredatorRP(platform);
+    if (sessionData) sessionData.predatorRP = cutoff;
+    return cutoff;
+  } catch (e) {
+    console.error('[bg] Predator fetch failed:', e.message);
+    return sessionData ? sessionData.predatorRP : null;
+  }
 }
 
 // ─── Streak ──────────────────────────────────────────────────────────────────
@@ -134,15 +105,45 @@ function calculateStreak(matches) {
   return streak;
 }
 
+// Cumulative RP floor to ENTER each tier (2026 ranked system).
+const TIER_FLOORS = [
+  { name: 'BRONZE',   rp: 1000 },
+  { name: 'SILVER',   rp: 3000 },
+  { name: 'GOLD',     rp: 5250 },
+  { name: 'PLATINUM', rp: 8250 },
+  { name: 'DIAMOND',  rp: 12000 },
+  { name: 'MASTER',   rp: 16000 }
+];
+
+// Points to the next major rank-up. Above Master, the target is the live
+// predator cutoff; already past it (true Predator) → null.
+function nextBigRankup(rp, predatorRP) {
+  if (rp == null) return null;
+  for (const tier of TIER_FLOORS) {
+    if (rp < tier.rp) return { name: tier.name, remaining: tier.rp - rp };
+  }
+  if (predatorRP && rp < predatorRP) {
+    return { name: 'PREDATOR', remaining: predatorRP - rp };
+  }
+  return null;
+}
+
 function buildInGamePayload() {
   if (!sessionData) return {};
+  const matches      = sessionData.matches || [];
   const sessionDelta = (sessionData.currentRP || 0) - (sessionData.startRP || 0);
-  const lastMatch = (sessionData.matches || []).slice(-1)[0];
+  const lastMatch    = matches.slice(-1)[0];
+  const last4        = matches.slice(-4).map(m => m.delta);
   return {
     currentRP:   sessionData.currentRP,
-    rankName:    lastMatch ? `${lastMatch.rankName} ${lastMatch.rankDiv}` : '',
+    rankName:    lastMatch ? lastMatch.rankName : '',
+    rankDiv:     lastMatch ? lastMatch.rankDiv : '',
+    ladderPos:   lastMatch ? lastMatch.ladderPos : null,
+    isPred:      !!(lastMatch && /pred/i.test(lastMatch.rankName || '')),
     sessionDelta,
-    matchCount:  (sessionData.matches || []).length
+    matchCount:  matches.length,
+    last4,
+    nextRankup:  nextBigRankup(sessionData.currentRP, sessionData.predatorRP)
   };
 }
 
@@ -179,8 +180,6 @@ async function startSession(name, plat) {
     sendToDesktop('session_started', { ...sessionData });
     sendToInGame('rp_update', buildInGamePayload());
 
-    startPolling();
-
     // Open in-game overlay if game is already running
     if (gameIsRunning) openInGameWindow();
   } catch (e) {
@@ -192,7 +191,6 @@ function endSession() {
   if (!sessionData) return;
   sessionData.sessionActive = false;
   sessionActive = false;
-  stopPolling();
 
   dbRead('history.json', (err, history) => {
     const arr = (!err && history) ? history : [];
@@ -223,11 +221,15 @@ function onMatchEnd() {
         rpAfter,
         delta,
         rankName: rankData.rankName,
-        rankDiv: rankData.rankDiv
+        rankDiv: rankData.rankDiv,
+        ladderPos: rankData.ladderPos
       };
 
       sessionData.currentRP = currentRP;
       sessionData.matches.push(matchEntry);
+
+      // Refresh the predator cutoff once per match end (never on a timer).
+      await refreshPredatorRP();
       dbWrite('session.json', sessionData);
 
       sendToDesktop('match_recorded', { match: matchEntry, session: sessionData });
@@ -261,11 +263,15 @@ async function manualRecordMatch() {
       rpAfter,
       delta,
       rankName: rankData.rankName,
-      rankDiv:  rankData.rankDiv
+      rankDiv:  rankData.rankDiv,
+      ladderPos: rankData.ladderPos
     };
 
     sessionData.currentRP = currentRP;
     sessionData.matches.push(matchEntry);
+
+    // Refresh the predator cutoff once per match end (never on a timer).
+    await refreshPredatorRP();
     dbWrite('session.json', sessionData);
 
     sendToDesktop('match_recorded', { match: matchEntry, session: sessionData });
@@ -395,7 +401,7 @@ function openInGameWindow() {
       if (sessionData && !sessionData.hasPositionedOverlay) {
         overwolf.games.getRunningGameInfo(gameInfo => {
           if (!gameInfo || !gameInfo.logicalWidth) return;
-          const x = gameInfo.logicalWidth - 220;
+          const x = gameInfo.logicalWidth - 256;
           const y = 10;
           overwolf.windows.changePosition(winId, x, y, () => {
             sessionData.hasPositionedOverlay = true;
@@ -492,7 +498,6 @@ overwolf.windows.onMessageReceived.addListener(msg => {
       playerName    = saved.playerName;
       platform      = saved.platform;
       currentRP     = saved.currentRP;
-      startPolling();
     }
   });
 
