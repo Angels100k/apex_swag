@@ -3,10 +3,10 @@
   "type": "WebApp",
   "meta": {
     "name": "Apex Swag RP Tracker",
-    "author": "local",
+    "author": "Apex Swag",
     "version": "1.0.0.0",
     "minimum-overwolf-version": "0.220.0.0",
-    "description": "Tracks ranked RP per session in Apex Legends.",
+    "description": "Track your Apex Legends ranked RP live: per-session gains, last games, rank-up progress, cloud match history, and a global leaderboard.",
     "icon": "img/icon.png",
     "icon_gray": "img/icon_gray.png"
   },
@@ -52,6 +52,13 @@
         "event_data": { "game_ids": [21566] },
         "start_minimized": true
       }
-    ]
+    ],
+    "hotkeys": {
+      "apex_swag_toggle": {
+        "title": "Toggle Apex Swag overlay",
+        "action-type": "custom",
+        "default": "Ctrl+Shift+A"
+      }
+    }
   }
 }

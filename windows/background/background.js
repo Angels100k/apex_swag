@@ -1,7 +1,10 @@
 // background.js — main controller for Apex Swag RP Tracker
 
 const APEX_GAME_ID = 21566;
-const PROXY_BASE = 'http://127.0.0.1:7272';
+// Online backend (PHP). Configured in config.js — no local proxy/.exe needed.
+const API_BASE  = (typeof CONFIG !== 'undefined' && CONFIG.API_BASE_URL) || '';
+const APP_TOKEN = (typeof CONFIG !== 'undefined' && CONFIG.APP_TOKEN) || '';
+function apiHeaders(extra) { return Object.assign({ 'X-App-Token': APP_TOKEN }, extra || {}); }
 const REQUIRED_FEATURES = ['me', 'rank', 'match_state', 'match_info', 'match_summary'];
 const STORAGE = overwolf.extensions.io.enums.StorageSpace.appData;
 
@@ -15,6 +18,7 @@ let currentRP        = null;
 let sessionData      = null;
 let gameIsRunning    = false;
 let gepConnected     = false;
+let gepRegistering   = false;   // guards against parallel retry loops
 
 // ─── DB helpers ─────────────────────────────────────────────────────────────
 
@@ -38,12 +42,12 @@ function dbWrite(filename, data, cb) {
 // ─── Apex API (via local CORS proxy — run start-proxy.bat first) ─────────────
 
 async function fetchPlayerRP(name, plat) {
-  const url = `${PROXY_BASE}?auth=${CONFIG.APEX_API_KEY}&player=${encodeURIComponent(name)}&platform=${plat}`;
+  const url = `${API_BASE}?action=rp&player=${encodeURIComponent(name)}&platform=${encodeURIComponent(plat)}`;
   let resp;
   try {
-    resp = await fetch(url);
+    resp = await fetch(url, { headers: apiHeaders() });
   } catch (e) {
-    throw new Error('Proxy unreachable — is start-proxy.bat running? (' + e.message + ')');
+    throw new Error('Server unreachable — check your connection (' + e.message + ')');
   }
   const text = await resp.text();
   if (!resp.ok) {
@@ -67,8 +71,8 @@ async function fetchPlayerRP(name, plat) {
 
 // Predator cutoff — only the auth key is needed. Called at match end, never polled.
 async function fetchPredatorRP(plat) {
-  const url = `${PROXY_BASE}?mode=predator&auth=${CONFIG.APEX_API_KEY}`;
-  const resp = await fetch(url);
+  const url = `${API_BASE}?action=predator`;
+  const resp = await fetch(url, { headers: apiHeaders() });
   const text = await resp.text();
   if (!resp.ok) throw new Error('Predator HTTP ' + resp.status);
   const data = JSON.parse(text);
@@ -157,6 +161,60 @@ function sendToInGame(msgId, content) {
   overwolf.windows.sendMessage('in_game', msgId, content, () => {});
 }
 
+// ─── History persistence (offline report via proxy) ──────────────────────────
+
+
+// Build {sessions: pastSessions, current} from disk + memory, POST to the proxy
+// which writes apex-history.json + apex-history.html. Best-effort, never blocks.
+function pushHistory() {
+  dbRead('history.json', async (err, history) => {
+    const sessions = (!err && Array.isArray(history)) ? history : [];
+    try {
+      const resp = await fetch(`${API_BASE}?action=save`, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          player: playerName,
+          platform,
+          sessions,
+          current: sessionData || null
+        })
+      });
+      await resp.json().catch(() => {});
+    } catch (e) {
+      console.error('[bg] pushHistory failed:', e.message);
+    }
+  });
+}
+
+// Pull this player's full history from the cloud backend.
+async function fetchHistory(name, plat) {
+  if (!name || !API_BASE) return [];
+  const url = `${API_BASE}?action=history&player=${encodeURIComponent(name)}&platform=${encodeURIComponent(plat || 'PC')}`;
+  try {
+    const resp = await fetch(url, { headers: apiHeaders() });
+    const data = await resp.json();
+    return (data && Array.isArray(data.sessions)) ? data.sessions : [];
+  } catch (e) {
+    console.error('[bg] fetchHistory failed:', e.message);
+    return [];
+  }
+}
+
+// Pull the global leaderboard for a time window (24h | 7d | all).
+async function fetchLeaderboard(win) {
+  if (!API_BASE) return [];
+  const url = `${API_BASE}?action=leaderboard&window=${encodeURIComponent(win || '24h')}`;
+  try {
+    const resp = await fetch(url, { headers: apiHeaders() });
+    const data = await resp.json();
+    return (data && Array.isArray(data.players)) ? data.players : [];
+  } catch (e) {
+    console.error('[bg] fetchLeaderboard failed:', e.message);
+    return [];
+  }
+}
+
 // ─── Session management ──────────────────────────────────────────────────────
 
 async function startSession(name, plat) {
@@ -179,6 +237,7 @@ async function startSession(name, plat) {
     dbWrite('session.json', sessionData);
     sendToDesktop('session_started', { ...sessionData });
     sendToInGame('rp_update', buildInGamePayload());
+    pushHistory();
 
     // Open in-game overlay if game is already running
     if (gameIsRunning) openInGameWindow();
@@ -199,6 +258,7 @@ function endSession() {
   });
   dbWrite('session.json', sessionData);
   sendToDesktop('session_ended', sessionData);
+  pushHistory();
 }
 
 // ─── Match end handler ───────────────────────────────────────────────────────
@@ -234,6 +294,7 @@ function onMatchEnd() {
 
       sendToDesktop('match_recorded', { match: matchEntry, session: sessionData });
       sendToInGame('rp_update', buildInGamePayload());
+      pushHistory();
     } catch (e) {
       console.error('[bg] Post-match RP fetch failed:', e.message);
     } finally {
@@ -276,6 +337,7 @@ async function manualRecordMatch() {
 
     sendToDesktop('match_recorded', { match: matchEntry, session: sessionData });
     sendToInGame('rp_update', buildInGamePayload());
+    pushHistory();
   } catch (e) {
     sendToDesktop('session_error', { message: e.message });
   } finally {
@@ -287,11 +349,27 @@ async function manualRecordMatch() {
 
 function registerFeatures(retries) {
   retries = retries || 0;
+  // Only one retry loop at a time (init + game-launch can both call in).
+  if (retries === 0) {
+    if (gepRegistering) return;
+    gepRegistering = true;
+  }
   overwolf.games.events.setRequiredFeatures(REQUIRED_FEATURES, result => {
     if (!result.success) {
-      if (retries < 10) setTimeout(() => registerFeatures(retries + 1), 2000);
+      const err = result.error || 'features not available yet';
+      console.warn('[bg] GEP registration failed (try ' + (retries + 1) + '):', err);
+      gepConnected = false;
+      sendToDesktop('gep_status', { connected: false, error: err });
+      // Apex GEP is usually unavailable at the menu/queue — keep retrying the
+      // whole time the game is running instead of giving up after ~20s.
+      if (gameIsRunning) {
+        setTimeout(() => registerFeatures(retries + 1), 3000);
+      } else {
+        gepRegistering = false;
+      }
       return;
     }
+    gepRegistering = false;
     console.log('[bg] GEP features registered');
     gepConnected = true;
     sendToDesktop('gep_status', { connected: true });
@@ -419,6 +497,23 @@ function closeInGameWindow() {
   });
 }
 
+// Show/hide the overlay — bound to the manifest hotkey (default Ctrl+Shift+A).
+function toggleInGameWindow() {
+  overwolf.windows.obtainDeclaredWindow('in_game', r => {
+    if (!r.success) return;
+    const st = r.window.stateEx;
+    if (st === 'normal' || st === 'maximized') closeInGameWindow();
+    else openInGameWindow();
+  });
+}
+
+function registerHotkeys() {
+  if (!overwolf.settings || !overwolf.settings.hotkeys) return;
+  overwolf.settings.hotkeys.onPressed.addListener(result => {
+    if (result && result.name === 'apex_swag_toggle') toggleInGameWindow();
+  });
+}
+
 // ─── Game detection ──────────────────────────────────────────────────────────
 
 overwolf.games.onGameInfoUpdated.addListener(event => {
@@ -438,6 +533,9 @@ overwolf.games.onGameInfoUpdated.addListener(event => {
     console.log('[bg] Apex closed');
     gameIsRunning = false;
     listenersRegistered = false;
+    gepRegistering = false;
+    gepConnected = false;
+    sendToDesktop('gep_status', { connected: false });
     closeInGameWindow();
   }
 });
@@ -472,11 +570,30 @@ overwolf.windows.onMessageReceived.addListener(msg => {
         gepConnected
       });
       break;
+    case 'request_history': {
+      const who  = (msg.content && msg.content.playerName) || playerName;
+      const plat = (msg.content && msg.content.platform)   || platform || 'PC';
+      fetchHistory(who, plat).then((sessions) => {
+        // The active session is shown live elsewhere — keep only completed ones here.
+        const curStart = sessionData && sessionData.sessionStart;
+        const past = curStart ? sessions.filter(s => s.sessionStart !== curStart) : sessions;
+        sendToDesktop('history_data', { sessions: past, current: sessionData || null });
+      });
+      break;
+    }
+    case 'request_leaderboard': {
+      const win = (msg.content && msg.content.window) || '24h';
+      fetchLeaderboard(win).then((players) => {
+        sendToDesktop('leaderboard_data', { window: win, players });
+      });
+      break;
+    }
     case 'delete_match':
       if (sessionActive && sessionData && sessionData.matches) {
         sessionData.matches.splice(msg.content.index, 1);
         dbWrite('session.json', sessionData);
         sendToDesktop('match_deleted', { sessionData });
+        pushHistory();
       }
       break;
   }
@@ -489,6 +606,8 @@ overwolf.windows.onMessageReceived.addListener(msg => {
   overwolf.windows.obtainDeclaredWindow('desktop', r => {
     if (r.success) overwolf.windows.restore(r.window.id, () => {});
   });
+
+  registerHotkeys();
 
   // Restore session from disk
   dbRead('session.json', (err, saved) => {

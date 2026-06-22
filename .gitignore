@@ -1,4 +1,6 @@
 config.js
+server-php/config.php
 .db/
 .claude
 node_modules/
+dist/

@@ -44,6 +44,26 @@ $('btn-record-match').addEventListener('click', () => {
   }, 12000);
 });
 
+$('btn-leaderboard').addEventListener('click', () => {
+  const panel = $('leaderboard-container');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) requestLeaderboard();
+});
+$('leaderboard-window').addEventListener('change', requestLeaderboard);
+
+function requestLeaderboard() {
+  overwolf.windows.sendMessage('background', 'request_leaderboard',
+    { window: $('leaderboard-window').value }, () => {});
+}
+
+// Ask for this player's cloud history (keyed by name + platform).
+function requestHistory() {
+  overwolf.windows.sendMessage('background', 'request_history', {
+    playerName: $('input-player').value.trim(),
+    platform: $('select-platform').value
+  }, () => {});
+}
+
 // ─── Incoming messages from background ───────────────────────────────────────
 
 overwolf.windows.onMessageReceived.addListener(msg => {
@@ -55,6 +75,7 @@ overwolf.windows.onMessageReceived.addListener(msg => {
       break;
     case 'session_ended':
       setSessionStatus(false);
+      requestHistory();
       break;
     case 'match_recorded':
       renderSession(msg.content.session);
@@ -83,7 +104,13 @@ overwolf.windows.onMessageReceived.addListener(msg => {
       renderSession(msg.content.sessionData);
       break;
     case 'gep_status':
-      setGepStatus(msg.content.connected);
+      setGepStatus(msg.content.connected, msg.content.error);
+      break;
+    case 'leaderboard_data':
+      renderLeaderboard(msg.content.players || []);
+      break;
+    case 'history_data':
+      renderHistory(msg.content.sessions || []);
       break;
   }
 });
@@ -107,13 +134,15 @@ function setSessionStatus(active) {
   $('btn-record-match').disabled = !active;
 }
 
-function setGepStatus(connected) {
+function setGepStatus(connected, error) {
   const el = $('gep-badge');
   el.textContent = connected ? 'GEP ON' : 'GEP OFF';
   el.className   = connected ? 'badge-gep-on' : 'badge-gep-off';
   el.title       = connected
     ? 'Overwolf game events active — match end auto-detected'
-    : 'Overwolf game events inactive — use Record Match button after each game';
+    : error
+      ? 'GEP not connected (' + error + ') — retrying while Apex runs. Use Record Match meanwhile.'
+      : 'Overwolf game events inactive — use Record Match button after each game';
 }
 
 function renderSession(session) {
@@ -166,6 +195,73 @@ function rebuildTable(matches) {
   $('no-matches').classList.add('hidden');
 }
 
+function renderHistory(sessions) {
+  const list = $('history-list');
+  const past = sessions.filter(s => (s.matches || []).length > 0);
+  if (!past.length) {
+    $('no-history').classList.remove('hidden');
+    list.innerHTML = '';
+    $('history-meta').textContent = '';
+    return;
+  }
+  $('no-history').classList.add('hidden');
+  const totalMatches = past.reduce((a, s) => a + s.matches.length, 0);
+  $('history-meta').textContent = past.length + ' sessions • ' + totalMatches + ' matches';
+
+  // Newest session first
+  list.innerHTML = past.slice().reverse().map(s => {
+    const matches = s.matches || [];
+    const net = (s.currentRP || 0) - (s.startRP || 0);
+    const last = matches[matches.length - 1];
+    const rank = last ? `${last.rankName} ${last.rankDiv}`.trim() : '—';
+    const netCls = net >= 0 ? 'delta-pos' : 'delta-neg';
+    const rows = matches.slice().reverse().map((m, i) => {
+      const n = matches.length - i;
+      const dc = m.delta >= 0 ? 'delta-pos' : 'delta-neg';
+      return `<tr><td>${n}</td><td>${formatTime(m.timestamp)}</td><td>${m.rpBefore}</td><td>${m.rpAfter}</td><td class="${dc}">${formatDelta(m.delta)}</td><td>${m.rankName} ${m.rankDiv}</td></tr>`;
+    }).join('');
+    return `<details class="history-session">
+      <summary>
+        <span class="hs-date">${formatDate(s.sessionStart)}</span>
+        <span class="hs-rank">${rank}</span>
+        <span class="hs-matches">${matches.length} matches</span>
+        <span class="hs-net ${netCls}">${formatDelta(net)}</span>
+      </summary>
+      <table class="history-table">
+        <thead><tr><th>#</th><th>Time</th><th>Before</th><th>After</th><th>Δ</th><th>Rank</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </details>`;
+  }).join('');
+}
+
+function renderLeaderboard(players) {
+  const body = $('leaderboard-body');
+  const empty = $('no-leaderboard');
+  if (!players.length) {
+    empty.classList.remove('hidden');
+    body.innerHTML = '';
+    return;
+  }
+  empty.classList.add('hidden');
+  body.innerHTML = players.map((p, i) => {
+    const cls = p.netRP >= 0 ? 'delta-pos' : 'delta-neg';
+    return `<tr><td>${i + 1}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.platform)}</td>` +
+           `<td class="${cls}">${formatDelta(p.netRP)}</td><td>${p.matches}</td>` +
+           `<td>${p.peakRP != null ? p.peakRP : '—'}</td></tr>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function showError(msg) {
   const el = $('api-error');
   el.textContent = '⚠ ' + msg;
@@ -201,3 +297,4 @@ function calcStreak(matches) {
 // ─── Ask background for current state on load ─────────────────────────────────
 
 overwolf.windows.sendMessage('background', 'request_state', {}, () => {});
+requestHistory();

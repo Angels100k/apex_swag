@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Apex Swag — History</title>
+<style>
+  :root{--bg:#0d0d12;--surface:#16161e;--surface2:#1e1e28;--border:rgba(255,255,255,.08);
+    --red:#ff375f;--gold:#f0a500;--green:#34c759;--text:#e8e8f0;--muted:rgba(255,255,255,.4)}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;font-size:14px;padding:28px;max-width:1100px;margin:0 auto}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.5px}
+  h2{font-size:15px;font-weight:700;margin:0 0 12px;letter-spacing:.5px}
+  .sub{color:var(--muted);font-size:12px;margin-top:4px}
+  .cards{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 28px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;min-width:120px}
+  .card .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .card .l{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-top:4px}
+  .season{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px}
+  .season-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .season-stats{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-bottom:12px}
+  .season-stats b{color:var(--text);font-variant-numeric:tabular-nums}
+  svg{display:block;width:100%;height:90px;margin-bottom:14px;background:var(--surface2);border-radius:8px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+  th{color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700}
+  .pos{color:var(--green)} .neg{color:var(--red)}
+  details{margin-top:10px} summary{cursor:pointer;color:var(--muted);font-size:12px;user-select:none}
+  summary:hover{color:var(--text)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(255,55,95,.12);color:var(--red)}
+  .empty{color:var(--muted);padding:40px;text-align:center}
+</style>
+</head>
+<body>
+<script id="data" type="application/json">{"sessions":[{"playerName":"Angels100k","platform":"PC","sessionStart":"2026-06-10T18:00:00Z","sessionEnd":"2026-06-10T20:00:00Z","startRP":15800,"currentRP":16240,"matches":[{"timestamp":"2026-06-10T18:20:00Z","rpBefore":15800,"rpAfter":15600,"delta":-200,"rankName":"Master","rankDiv":""},{"timestamp":"2026-06-10T18:50:00Z","rpBefore":15600,"rpAfter":15980,"delta":380,"rankName":"Master","rankDiv":""},{"timestamp":"2026-06-10T19:30:00Z","rpBefore":15980,"rpAfter":16240,"delta":260,"rankName":"Master","rankDiv":""}]},{"playerName":"Angels100k","platform":"PC","sessionStart":"2026-06-15T17:00:00Z","sessionEnd":"2026-06-15T19:00:00Z","startRP":8750,"currentRP":9600,"matches":[{"timestamp":"2026-06-15T17:15:00Z","rpBefore":8750,"rpAfter":9100,"delta":350,"rankName":"Platinum","rankDiv":"4","ladderPos":null},{"timestamp":"2026-06-15T17:55:00Z","rpBefore":9100,"rpAfter":9600,"delta":500,"rankName":"Platinum","rankDiv":"3","ladderPos":null}]}],"current":{"playerName":"Angels100k","platform":"PC","sessionStart":"2026-06-16T20:00:00Z","startRP":9600,"currentRP":10180,"matches":[{"timestamp":"2026-06-16T20:20:00Z","rpBefore":9600,"rpAfter":9820,"delta":220,"rankName":"Platinum","rankDiv":"3","ladderPos":null},{"timestamp":"2026-06-16T20:50:00Z","rpBefore":9820,"rpAfter":10180,"delta":360,"rankName":"Platinum","rankDiv":"2","ladderPos":null}]},"generatedAt":"2026-06-16T20:10:22.476Z"}</script>
+<div id="root"></div>
+<script>
+(function(){
+  const RESET_DROP = 1500;
+  const data = JSON.parse(document.getElementById('data').textContent);
+  const sessions = (data.sessions||[]).concat(data.current ? [data.current] : []);
+  const fmt = n => (n==null?'—':Number(n).toLocaleString('en-US'));
+  const sign = n => (n>0?'+':n<0?'−':'') + Number(Math.abs(n)).toLocaleString('en-US');
+  const dt = iso => iso ? new Date(iso).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+  const day = iso => iso ? new Date(iso).toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'}) : '—';
+
+  // Flatten matches with their session index, time-sorted.
+  let flat = [];
+  sessions.forEach((s,si)=> (s.matches||[]).forEach(m => flat.push(Object.assign({},m,{si}))));
+  flat.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+
+  // Season detection — a big RP drop between consecutive matches = ranked reset.
+  let season = 0, prev = null;
+  flat.forEach(m => {
+    if (prev && (prev.rpAfter - m.rpBefore) >= RESET_DROP) season++;
+    m.season = season; prev = m;
+  });
+  const seasons = [];
+  flat.forEach(m => { (seasons[m.season] = seasons[m.season] || []).push(m); });
+
+  const root = document.getElementById('root');
+  const player = (sessions.find(s=>s.playerName)||{}).playerName || 'Player';
+  const allNet = flat.reduce((a,m)=>a + (m.delta||0), 0);
+  const peak = flat.reduce((a,m)=>Math.max(a, m.rpAfter||0), 0);
+  const cur = flat.length ? flat[flat.length-1].rpAfter : null;
+
+  if (!flat.length) { root.innerHTML = '<h1>Apex Swag — History</h1><div class="empty">No matches recorded yet.</div>'; return; }
+
+  let html = '<h1>'+esc(player)+' — Ranked History</h1>'+
+    '<div class="sub">Generated '+dt(data.generatedAt)+' • '+seasons.length+' season(s) • '+flat.length+' matches</div>'+
+    '<div class="cards">'+
+      card(fmt(cur),'Current RP')+ card(sign(allNet),'Net RP (all-time)',allNet>=0?'pos':'neg')+
+      card(fmt(peak),'Peak RP')+ card(flat.length,'Total Matches')+ card(seasons.length,'Seasons')+
+    '</div>';
+
+  // Seasons newest-first
+  for (let i=seasons.length-1;i>=0;i--){
+    const ms = seasons[i];
+    const net = ms.reduce((a,m)=>a+(m.delta||0),0);
+    const wins = ms.filter(m=>m.delta>0).length, losses = ms.filter(m=>m.delta<0).length;
+    const pk = ms.reduce((a,m)=>Math.max(a,m.rpAfter||0),0);
+    const first = ms[0], last = ms[ms.length-1];
+    const rankRange = rankLabel(first)===rankLabel(last) ? rankLabel(last) : rankLabel(first)+' → '+rankLabel(last);
+    html += '<div class="season"><div class="season-head">'+
+        '<h2>Season '+(i+1)+' <span class="pill">'+esc(rankRange)+'</span></h2>'+
+        '<div class="sub">'+day(first.timestamp)+' – '+day(last.timestamp)+'</div></div>'+
+      '<div class="season-stats">'+
+        '<span>Net <b class="'+(net>=0?'pos':'neg')+'">'+sign(net)+'</b></span>'+
+        '<span>Matches <b>'+ms.length+'</b></span>'+
+        '<span>+ / − <b class="pos">'+wins+'</b> / <b class="neg">'+losses+'</b></span>'+
+        '<span>Peak <b>'+fmt(pk)+'</b></span>'+
+      '</div>'+ sparkline(ms) +
+      '<details><summary>Show '+ms.length+' matches</summary>'+ matchTable(ms) +'</details>'+
+    '</div>';
+  }
+  root.innerHTML = html;
+
+  function card(v,l,extra){return '<div class="card"><div class="v '+(extra||'')+'">'+v+'</div><div class="l">'+l+'</div></div>';}
+  function rankLabel(m){return ((m.rankName||'')+' '+(m.rankDiv||'')).trim() || '—';}
+  function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+  function matchTable(ms){
+    let r='<table><thead><tr><th>#</th><th>Time</th><th>Before</th><th>After</th><th>Δ</th><th>Rank</th></tr></thead><tbody>';
+    ms.slice().reverse().forEach((m,idx)=>{ const n=ms.length-idx;
+      r+='<tr><td>'+n+'</td><td>'+dt(m.timestamp)+'</td><td>'+fmt(m.rpBefore)+'</td><td>'+fmt(m.rpAfter)+
+         '</td><td class="'+(m.delta>=0?'pos':'neg')+'">'+sign(m.delta)+'</td><td>'+esc(rankLabel(m))+'</td></tr>';
+    });
+    return r+'</tbody></table>';
+  }
+  function sparkline(ms){
+    const W=900,H=90,P=8; const ys=ms.map(m=>m.rpAfter);
+    const min=Math.min.apply(null,ys), max=Math.max.apply(null,ys), span=(max-min)||1;
+    const n=ms.length;
+    const x=i=> n<=1 ? W/2 : P + i*(W-2*P)/(n-1);
+    const y=v=> H-P - (v-min)*(H-2*P)/span;
+    let d=''; ms.forEach((m,i)=> d += (i?'L':'M')+x(i).toFixed(1)+' '+y(m.rpAfter).toFixed(1)+' ');
+    return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+      '<path d="'+d+'" fill="none" stroke="#ff375f" stroke-width="2"/></svg>';
+  }
+})();
+</script>
+</body>
+</html>

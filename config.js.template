@@ -1,6 +1,13 @@
-// config.js — DO NOT COMMIT (gitignored)
-// Get your API key at https://apexlegendsapi.com/
+// config.js — copy this file to config.js and fill in your backend details.
+// No Apex API key here anymore: it lives only on your PHP server (server-php/config.php).
 const CONFIG = {
-  APEX_API_KEY: '',
+  // Full URL to your deployed backend front controller (see server-php/).
+  API_BASE_URL: 'https://YOURDOMAIN/apex/api.php',
+
+  // Shared token sent as the X-App-Token header.
+  // Must exactly match 'app_secret' in server-php/config.php.
+  APP_TOKEN: 'CHANGE_ME_TO_A_LONG_RANDOM_STRING',
+
+  // Default platform shown in the UI (PC | PS4 | X1 | SWITCH).
   PLATFORM: 'PC'
 };

@@ -1,0 +1,111 @@
+{
+  "sessions": [
+    {
+      "sessionActive": false,
+      "sessionStart": "2026-06-17T19:33:28.468Z",
+      "playerName": "angels100k",
+      "platform": "PC",
+      "startRP": 12798,
+      "currentRP": 12671,
+      "hasPositionedOverlay": true,
+      "matches": [
+        {
+          "timestamp": "2026-06-17T19:45:55.684Z",
+          "rpBefore": 12798,
+          "rpAfter": 12778,
+          "delta": -20,
+          "rankName": "Diamond",
+          "rankDiv": 4,
+          "ladderPos": -1
+        },
+        {
+          "timestamp": "2026-06-17T20:04:06.802Z",
+          "rpBefore": 12778,
+          "rpAfter": 12806,
+          "delta": 28,
+          "rankName": "Diamond",
+          "rankDiv": 4,
+          "ladderPos": -1
+        },
+        {
+          "timestamp": "2026-06-17T20:17:17.849Z",
+          "rpBefore": 12806,
+          "rpAfter": 12781,
+          "delta": -25,
+          "rankName": "Diamond",
+          "rankDiv": 4,
+          "ladderPos": -1
+        },
+        {
+          "timestamp": "2026-06-17T20:33:52.278Z",
+          "rpBefore": 12781,
+          "rpAfter": 12736,
+          "delta": -45,
+          "rankName": "Diamond",
+          "rankDiv": 4,
+          "ladderPos": -1
+        },
+        {
+          "timestamp": "2026-06-17T20:37:59.325Z",
+          "rpBefore": 12736,
+          "rpAfter": 12671,
+          "delta": -65,
+          "rankName": "Diamond",
+          "rankDiv": 4,
+          "ladderPos": -1
+        },
+        {
+          "timestamp": "2026-06-17T20:38:14.798Z",
+          "rpBefore": 12671,
+          "rpAfter": 12671,
+          "delta": 0,
+          "rankName": "Diamond",
+          "rankDiv": 4,
+          "ladderPos": -1
+        }
+      ],
+      "predatorRP": 49705,
+      "sessionEnd": "2026-06-17T20:51:01.023Z"
+    }
+  ],
+  "current": {
+    "sessionActive": true,
+    "sessionStart": "2026-06-20T06:44:35.155Z",
+    "playerName": "angels100k",
+    "platform": "PC",
+    "startRP": 12671,
+    "currentRP": 12691,
+    "hasPositionedOverlay": true,
+    "matches": [
+      {
+        "timestamp": "2026-06-20T06:48:42.804Z",
+        "rpBefore": 12671,
+        "rpAfter": 12606,
+        "delta": -65,
+        "rankName": "Diamond",
+        "rankDiv": 4,
+        "ladderPos": -1
+      },
+      {
+        "timestamp": "2026-06-20T07:06:07.935Z",
+        "rpBefore": 12606,
+        "rpAfter": 12546,
+        "delta": -60,
+        "rankName": "Diamond",
+        "rankDiv": 4,
+        "ladderPos": -1
+      },
+      {
+        "timestamp": "2026-06-20T07:17:42.234Z",
+        "rpBefore": 12546,
+        "rpAfter": 12691,
+        "delta": 145,
+        "rankName": "Diamond",
+        "rankDiv": 4,
+        "ladderPos": -1
+      }
+    ],
+    "predatorRP": 52900
+  },
+  "generatedAt": "2026-06-20T07:17:42.387Z"
+}

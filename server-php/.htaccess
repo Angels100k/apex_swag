@@ -1,0 +1,9 @@
+# Force HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Never serve secrets / db helper directly
+<FilesMatch "^(config\.php|config\.sample\.php|db\.php)$">
+    Require all denied
+</FilesMatch>
